@@ -6,3 +6,4 @@ cache/
 texts/
 *.bz2
 __pycache__/
+.env
