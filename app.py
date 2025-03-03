@@ -15,7 +15,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 
 # Load environment variables from a .env file
-
+load_dotenv(override=True)
 
 # Set up logging in the app.log file
 log = logging.getLogger("assistant")
@@ -23,9 +23,13 @@ logging.basicConfig(filename="app.log", level=logging.INFO)
 
 # Import and configure OpenAI
 from langchain_openai import ChatOpenAI
-api_key = "YOUR OPENAI API KEY HERE"
+api_key = os.getenv("OPENAI_API_KEY")
 
-chat_llm = ChatOpenAI(model="gpt-4o-mini")
+if not api_key:
+    raise ValueError("Missing OPENAI_API_KEY in environment variables")
+
+chat_llm = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
+
 
 # Flask app setup
 app = Flask(__name__)
