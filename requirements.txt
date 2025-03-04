@@ -1,8 +1,14 @@
-openai
 flask
-python-dotenv
+flask-login
+flask-sqlalchemy
+gutenbergpy
 langchain
 langchain-community
 langchain_openai
 langgraph
 lark
+openai
+psycopg2-binary
+python-dotenv
+supabase
+werkzeug
