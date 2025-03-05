@@ -158,7 +158,7 @@ def signup():
         user = User.query.filter_by(username=username).first()
         if user:
             flash("Username already registered.", "error")
-            return redirect(url_for("sigup"))
+            return redirect(url_for("signup"))
         new_user = User(
             username=username,
             email=email,
@@ -182,7 +182,7 @@ def login():
             return redirect(url_for("login"))
         login_user(user)
         flash("Logged in successfully!", "success")
-        return redirect(url_for("/"))
+        return redirect("/")
     return render_template("login.html")
 
 # My Account route
