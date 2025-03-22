@@ -2,6 +2,7 @@ flask
 flask-login
 flask-sqlalchemy
 gutenbergpy
+jsonify
 langchain
 langchain-community
 langchain_openai
