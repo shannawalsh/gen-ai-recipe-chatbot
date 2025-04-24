@@ -69,4 +69,64 @@ def download_and_store_books(matching_books, vector_store):
     
     for book_id, title in matching_books:
         print(f"Processing: {title} (ID: {book_id})")
+        try:
+            # Download book content
+            raw_text = get_text_by_id(book_id)
+            content = raw_text.decode("utf-8", errors="ignore") # Decode to string
+            
+            # Split the text into manageable chunks
+            chunks = text_splitter.split_text(content)
+            
+            for i, chunk in enumerate(chunks):
+                # Construct metadat as a JSON object
+                metadata = {
+                    "source": title, # Key must be 'source' for LangChain
+                    "gutenberg_id": str(book_id),
+                    "chunk_index": i,
+                    "content_length": len(chunk)
+                }
+                
+                # Create a Document object
+                documents.append(Document(page_content=chunk, metadata=metadata))
+               
+        except Exception as e:
+            print(f"Error processing {title}: {e}") 
+        
+        # Batch insert documents to Supabase
+        batch_size = 50 # Adjust as necessary
+        for i in range(0, len(documents), batch_size):
+            batch = documents[i:i + batch_size]
+            try:
+                vector_store.add_documents(batch)
+                print(f"Successfully upload batch {i // batch_size + 1} " 
+                      f"of {len(documents) // batch_size + 1}.")
+            except Exception as e:
+                print(f"Error storing batch {i // batch_size + 1}: {e}")
+        
+        ####################
+        ########
+        # RAG FUNCTIONS
+        ########
+        ###################
+        
+def perform_similarity_search(query, vector_store):
+    """Perform a similarity search using LangChain."""
+    print("Performing similarity search...")
+    
+    docs = vector_store.similarity_search(query)
+    # Wrap each document in an item of the "results" list
+    results_list = []
+    
+    for doc in docs:
+        results_list.append({
+            "sub_query": query,
+            "answer": None, # No LLM answer, just raw search results
+            "sources": doc.metadata.get("source") if doc.metadata else None,
+            "source_documents": [doc]
+        })
+    return {
+        "method": "similarity search",
+        "query": query,
+        "results": results_list
+    }
         
