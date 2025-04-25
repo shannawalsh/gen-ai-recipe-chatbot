@@ -28,7 +28,7 @@ def search_gutenberg_titles(cache, keywords, top_n=10, start_date=None, end_date
     Returns: List of (gutenbergbookid, title).
     """
     matching_books = []
-    keyword_filters = " OR ".join([f"s.name LIKE '%{kw}" for kw in keywords])
+    keyword_filters = " OR ".join([f"s.name LIKE '%{kw}%'" for kw in keywords])
     
     date_filter = ""
     if start_date and end_date:
@@ -39,7 +39,7 @@ def search_gutenberg_titles(cache, keywords, top_n=10, start_date=None, end_date
         date_filter = f"AND b.dateissued <= '{end_date}'"
         
     query = f"""
-        SELECT DISTINCT b.gutenbergbookid AS gutenbeergbookid, t.name AS title
+        SELECT DISTINCT b.gutenbergbookid AS gutenbergbookid, t.name AS title
         FROM books b
         LEFT JOIN titles t ON b.id = t.bookid
         LEFT JOIN book_subjects bs ON b.id = bs.bookid
@@ -78,7 +78,7 @@ def download_and_store_books(matching_books, vector_store):
             chunks = text_splitter.split_text(content)
             
             for i, chunk in enumerate(chunks):
-                # Construct metadat as a JSON object
+                # Construct metadata as a JSON object
                 metadata = {
                     "source": title, # Key must be 'source' for LangChain
                     "gutenberg_id": str(book_id),
@@ -126,7 +126,7 @@ def perform_similarity_search(query, vector_store):
         })
         
     return {
-        "method": "similarity search",
+        "method": "similarity_search",
         "query": query,
         "results": results_list
     }
@@ -152,8 +152,8 @@ def main():
     start_date = args.start_date
     end_date = args.end_date
     
-    # Load enviornment variables
-    load_dotenv(override=True) # Load enviornment variables from .env
+    # Load environment variables
+    load_dotenv(override=True) # Load environment variables from .env
     
     SUPABASE_URL = os.getenv("SUPABASE_HTTPS_URL")
     SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -174,7 +174,7 @@ def main():
     embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
     
     chat_llm = ChatOpenAI(
-        model="gpt=4o", # or "gpt-3.5-turbo", etc.
+        model="gpt-4o", # or "gpt-3.5-turbo", etc.
         temperature=0,
         openai_api_key=OPENAI_API_KEY
     )
@@ -203,8 +203,35 @@ def main():
         
         for book_id, title in matching_books:
             print(f"Processing: {title} (ID: {book_id})")
+        
         print("Downloading and storing books...")
         download_and_store_books(matching_books, vector_store)
+
+    # Perform a sample query
+    query = args.query
+    print(f"Running query: {query}")
+    
+    if args.perform_similarity_search:
+        results = perform_similarity_search(query, vector_store)
+    else:
+        print("No operation selected. Use the CLI flags to choose an operation.")
+        return
+    
+    # Print out the results
+    # Check if results in None or empty
+    if not results:
+        print(f"\nNo results found for query: {query}")
+    else:
+        for i, res in enumerate(results['results'], start=1):
+          print(f"\n[Query {i}]: {res['sub_query']}")
+          print("\n[Answer]")
+          print(res["answer"])
+          print("\n[Source Documents]\n")
+          for doc in res["source_documents"]:
+              print("\n[Source]", doc.metadata.get("source")) 
+              print("\n[Content]", doc.page_content)
+          print("-" * 70)   
+
         
-        if __name__ == "__main__":
+if __name__ == "__main__":
             main() 
